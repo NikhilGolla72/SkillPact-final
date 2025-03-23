@@ -58,23 +58,21 @@ const Applicants = () => {
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Applicants");
-
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const dataBlob = new Blob([excelBuffer], { type: "application/octet-stream" });
-
     saveAs(dataBlob, "applicants_data.xlsx");
   };
 
   if (isLoading || !applicants) {
-    return <Loader text="Loading applicants..." />;
+    return <Loader />;
   }
 
   if (isError) {
-    return <ErrorScreen message="Failed to load applicants." retry={() => window.location.reload()} />;
+    return <ErrorScreen onRetry={() => window.location.reload()} />;
   }
 
   if (applicants.length === 0) {
-    return <center><p className="text-muted">No applicants found for this job yet</p></center>;
+    return <Container className="mt-4"><h3>No applicants found for this job yet</h3></Container>;
   }
 
   // Helper function to get badge variant based on status
@@ -88,127 +86,97 @@ const Applicants = () => {
   };
 
   return (
-    <Container className="py-4">
-      <h2 className="mb-4 fw-bold">Applicants</h2>
+    <Container className="mt-4">
+      <Row className="mb-4">
+        <Col>
+          <h2>Applicants</h2>
+          <Badge bg="primary" className="ms-2">
+            Total Applicants: {applicants.length}
+          </Badge>
+        </Col>
+        <Col xs="auto">
+          <Button variant="success" onClick={exportToExcel}>
+            📥 Download Excel
+          </Button>
+        </Col>
+      </Row>
 
-      <Button variant="success" className="mb-3" onClick={exportToExcel}>
-        📥 Download Excel
-      </Button>
-
-      <Card className="shadow-sm">
-        <Card.Body>
-          {applicants.map((data) => (
-            <Card 
-              key={data.applicant.email} 
-              className="mb-3 border"
-            >
-              <Card.Header 
-                className="d-flex justify-content-between align-items-center"
-                onClick={() => toggleExpand(data.applicant.email)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="d-flex align-items-center">
-                  <div 
-                    className="rounded-circle d-flex justify-content-center align-items-center me-3 text-primary"
-                    style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      backgroundColor: '#dbeafe',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    {data.applicant.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="fw-medium">
-                    <a
-                      href={`http://localhost:3000/profile/${data?.applicant._id}`}
-                      className="text-black text-decoration-none hover:text-muted"
-                    >
-                      {data.applicant.name}
-                    </a>
-                  </span>
-
-                  <Badge 
-                    bg={getStatusVariant(data.status)} 
-                    className="ms-3 text-capitalize"
-                  >
-                    {data.status}
-                  </Badge>
-                </div>
-                <Button variant="light" size="sm">
-                  {expandedId === data.applicant.email ? "▲" : "▼"}
-                </Button>
-              </Card.Header>
-
-              {expandedId === data.applicant.email && (
-                <Card.Body className="bg-light">
-                  <Row className="mb-2">
-                    <Col xs={12} md={3} className="fw-medium text-muted">Email:</Col>
-                    <Col xs={12} md={9}>{data.applicant.email}</Col>
-                  </Row>
-
-                  {data.applicant.phone && (
-                    <Row className="mb-2">
-                      <Col xs={12} md={3} className="fw-medium text-muted">Phone:</Col>
-                      <Col xs={12} md={9}>{data.applicant.phone}</Col>
-                    </Row>
-                  )}
-
-                  {data.applicant.location && (
-                    <Row className="mb-2">
-                      <Col xs={12} md={3} className="fw-medium text-muted">Location:</Col>
-                      <Col xs={12} md={9}>{data.applicant.location}</Col>
-                    </Row>
-                  )}
-
-                  {data.applicant.resume && (
-                    <Row className="mb-2">
-                      <Col xs={12} md={3} className="fw-medium text-muted">Resume:</Col>
-                      <Col xs={12} md={9}>
-                        <a href={data.applicant.resume} target="_blank" rel="noopener noreferrer" className="text-primary fw-medium text-decoration-none">
-                          View Resume
-                        </a>
-                      </Col>
-                    </Row>
-                  )}
-
-                  {/* Status Update Buttons for Company Admin */}
-                  {companyInfo && (
-                    <Row className="mt-3 pt-3 border-top">
-                      <Col xs={12} md={3} className="fw-medium text-muted">Update Status:</Col>
-                      <Col xs={12} md={9}>
-                        <div className="d-flex gap-2 flex-wrap">
-                          <Button
-                            variant={data.status === 'accepted' ? 'success' : 'outline-success'}
-                            size="sm"
-                            onClick={() => handleStatusUpdate(data._id, 'accepted')}
-                          >
-                            Accept
-                          </Button>
-                          <Button
-                            variant={data.status === 'rejected' ? 'danger' : 'outline-danger'}
-                            size="sm"
-                            onClick={() => handleStatusUpdate(data._id, 'rejected')}
-                          >
-                            Reject
-                          </Button>
-                          <Button
-                            variant={data.status === 'pending' ? 'warning' : 'outline-warning'}
-                            size="sm"
-                            onClick={() => handleStatusUpdate(data._id, 'pending')}
-                          >
-                            Pending
-                          </Button>
-                        </div>
-                      </Col>
-                    </Row>
-                  )}
-                </Card.Body>
+      {applicants.map((data) => (
+        <Card 
+          key={data.applicant.email} 
+          className="mb-3" 
+          onClick={() => toggleExpand(data.applicant.email)}
+          style={{ cursor: 'pointer' }}
+        >
+          <Card.Header className="d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center">
+              <div className="avatar me-3">
+                {data.applicant.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <Card.Title>{data.applicant.name}</Card.Title>
+                <Badge bg={getStatusVariant(data.status)}>
+                  {data.status}
+                </Badge>
+              </div>
+            </div>
+            <span>{expandedId === data.applicant.email ? "▲" : "▼"}</span>
+          </Card.Header>
+          
+          {expandedId === data.applicant.email && (
+            <Card.Body>
+              <p><strong>Email:</strong> {data.applicant.email}</p>
+              
+              {data.applicant.phone && (
+                <p><strong>Phone:</strong> {data.applicant.phone}</p>
               )}
-            </Card>
-          ))}
-        </Card.Body>
-      </Card>
+              
+              {data.applicant.location && (
+                <p><strong>Location:</strong> {data.applicant.location}</p>
+              )}
+              
+              {data.applicant.resume && (
+                <p>
+                  <strong>Resume:</strong>
+                  <a href={data.applicant.resume} target="_blank" rel="noopener noreferrer" className="ms-2">
+                    View Resume
+                  </a>
+                </p>
+              )}
+              
+              {/* Status Update Buttons for Company Admin */}
+              {companyInfo && (
+                <div className="mt-3">
+                  <strong>Update Status:</strong>
+                  <div className="d-flex gap-2 mt-2">
+                    <Button 
+                      variant="success" 
+                      size="sm" 
+                      onClick={() => handleStatusUpdate(data._id, 'accepted')}
+                    >
+                      Accept
+                    </Button>
+                    <Button 
+                      variant="danger" 
+                      size="sm" 
+                      onClick={() => handleStatusUpdate(data._id, 'rejected')}
+                    >
+                      Reject
+                    </Button>
+                    <Button 
+                      variant="warning" 
+                      size="sm" 
+                      onClick={() => handleStatusUpdate(data._id, 'pending')}
+                    >
+                      Pending
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card.Body>
+          )}
+        </Card>
+      ))}
     </Container>
   );
 };
