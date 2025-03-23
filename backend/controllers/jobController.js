@@ -130,6 +130,95 @@ const postJobs = asyncHandler(async (req, res) => {
 	}
 });
 
+const editJob = asyncHandler(async (req, res) => {
+	try {
+		const jobId = req.params.id;
+		const { title, description, stipend, duration, location, position, minqualification, badges, startsOn, category } = req.body;
+
+		console.log(title, description, stipend, duration, location, position, minqualification, badges, startsOn, category);
+
+		const userId = req.user._id;
+
+		let badgeIds;
+		if (badges) {
+			badgeIds = await Promise.all(
+				badges.map(async (badgeTitle) => {
+				const badge = await Badge.findOne({ title: badgeTitle });
+				if (!badge) throw new Error(`Badge "${badgeTitle}" not found`);
+				return badge._id;
+			}));
+		}
+
+		const company = (await User.findById(userId)).company; // Finding the user company
+
+		if (!company) {
+			return res.status(400).json({
+				message: "Company not registered for user",
+				success: false,
+			});
+		}
+		console.log(badgeIds);
+
+		try {
+			if (badgeIds?.length > 0) {
+				const badgeDocs = await Badge.find({ _id: { $in: badgeIds } });
+				if (badgeDocs.length !== badges.length) {
+					return res.status(400).json({ message: "selected badge not available" });
+				}
+			}
+		} catch (error) {
+			console.log(error);
+		}
+
+		const job = await Job.findById(jobId);
+		if (!job) {
+			return res.status(404).json({
+				message: "Job not found",
+				success: false,
+			});
+		}
+
+		if (job.createdby.toString() !== userId.toString()) {
+			return res.status(403).json({
+				message: "Unauthorized: Only the job creator can update this job",
+				success: false,
+			});
+		}
+		
+		await job.updateOne(
+			{
+				$set: {
+					title,
+					description,
+					stipend,
+					duration,
+					location,
+					position,
+					minqualification,
+					company, // Company is a required parameter in database
+					category,
+					startsOn,
+					badges: badgeIds,
+				},
+			}
+		);
+
+		return res.status(201).json({
+			message: "Job Updated successfully",
+			job,
+			success: true,
+		});
+	} catch (error) {
+		console.log(error);
+
+		return res.status(500).json({
+			message: "Server error",
+			success: false,
+		});
+	}
+});
+
+
 // @desc fetch job details
 // @route GET /api/jobs/info-jobs/:id
 // @access Public
@@ -330,4 +419,4 @@ const deleteJob = asyncHandler(async (req, res) => {
 
 
 
-export { adminJobs, getJobs, infoJobs, isEligible, postJobs, deleteJob, toggleJobStatus };
+export { adminJobs, getJobs, infoJobs, isEligible, editJob, postJobs, deleteJob, toggleJobStatus };
