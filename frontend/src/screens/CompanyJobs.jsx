@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable react/no-unescaped-entities */
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
@@ -7,6 +8,8 @@ import {
   useDeleteJobMutation, 
   useToggleJobStatusMutation 
 } from "../slices/jobsApiSlice";
+import PropTypes from 'prop-types';
+import { useGetApplicantDetailsQuery } from "../slices/applicantsApiSlice";
 import { toast } from "react-toastify";
 import Loader from "../components/Loader";
 import ErrorScreen from "../screens/ErrorScreen";
@@ -111,66 +114,15 @@ const CompanyJobs = () => {
         <Col xs={12}>
           <div className="d-flex flex-column gap-4">
             {filteredJobs.map((job) => (
-              <Card 
-                key={job._id} 
-                className="border-0 shadow-sm" 
-                style={{ 
-                  width: "90%",
-                  transition: "transform 0.2s, box-shadow 0.2s"
+              <JobCard 
+                key={job._id}
+                job={job}
+                onDelete={() => {
+                  setJobToDelete(job._id);
+                  setShowModal(true);
                 }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.1)";
-                }}
-              >
-                <Card.Body className="d-flex justify-content-between align-items-center flex-md-row flex-column">
-                  <div>
-                    <h5 className="fw-bold mb-2">{job.title}</h5>
-                    <p className="text-muted mb-2">{job.location || "Location not available"}</p>
-                    <div className="d-flex gap-3 mb-2">
-                      <small className="text-muted">🕒 {new Date(job.createdAt).toDateString()}</small>
-                      <small className="text-muted">👥 {job.applicants ? job.applicants.length : 0} Applicants</small>
-                    </div>
-                  </div>
-
-                  {/* Buttons Section */}
-                  <div className="d-flex gap-3 mt-3 mt-md-0">
-                    <Link to={`/company-jobs/${job._id}`} className="text-decoration-none">
-                      <Button
-                        style={{
-                          background: "linear-gradient(to right, #ff7e5f, #feb47b)",
-                          border: "none",
-                          fontWeight: "600",
-                          transition: "all 0.3s ease"
-                        }}
-                      >
-                        View Applicants
-                      </Button>
-                    </Link>
-
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        setJobToDelete(job._id);
-                        setShowModal(true);
-                      }}
-                    >
-                      Delete
-                    </Button>
-
-                    <Button
-                      variant={job.active ? "success" : "warning"}
-                      onClick={() => handleToggleStatus(job._id)}
-                    >
-                      {job.active ? "Deactivate" : "Activate"}
-                    </Button>
-                  </div>
-                </Card.Body>
-              </Card>
+                onToggleStatus={() => handleToggleStatus(job._id)}
+              />
             ))}
           </div>
         </Col>
@@ -194,5 +146,87 @@ const CompanyJobs = () => {
     </Container>
   );
 };
+
+const JobCard = ({ job, onDelete, onToggleStatus }) => {
+  const { data: applicantData } = useGetApplicantDetailsQuery(job._id);
+  const [applicantCount, setApplicantCount] = useState(0);
+
+  useEffect(() => {
+    if (applicantData && applicantData.success) {
+      setApplicantCount(applicantData.application.length);
+    }
+  }, [applicantData]);
+
+  return (
+    <Card 
+      className="border-0 shadow-sm" 
+      style={{ 
+        width: "90%",
+        transition: "transform 0.2s, box-shadow 0.2s"
+      }}
+      onMouseOver={(e) => {
+        e.currentTarget.style.transform = "translateY(-3px)";
+        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.1)";
+      }}
+    >
+      <Card.Body className="d-flex justify-content-between align-items-center flex-md-row flex-column">
+        <div>
+          <h5 className="fw-bold mb-2">{job.title}</h5>
+          <p className="text-muted mb-2">{job.location || "Location not available"}</p>
+          <div className="d-flex gap-3 mb-2">
+            <small className="text-muted">🕒 {new Date(job.createdAt).toDateString()}</small>
+            <small className="text-muted">👥 {applicantCount} Applicants</small>
+          </div>
+        </div>
+
+        {/* Buttons Section */}
+        <div className="d-flex gap-3 mt-3 mt-md-0">
+            <Link to={`/company-jobs/${job._id}`} className="text-decoration-none">
+            <Button
+              style={{
+                background: "linear-gradient(to right, #ff7e5f, #feb47b)",
+                border: "none",
+                fontWeight: "600",
+                transition: "all 0.3s ease"
+              }}
+            >
+              View Applicants
+            </Button>
+          </Link>
+
+          <Button
+            variant="danger"
+            onClick={onDelete}
+          >
+            Delete
+          </Button>
+
+          <Button
+            variant={job.active ? "success" : "warning"}
+            onClick={onToggleStatus}
+          >
+            {job.active ? "Deactivate" : "Activate"}
+          </Button>
+        </div>
+      </Card.Body>
+    </Card>
+  );
+};
+JobCard.propTypes = {
+  job: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    location: PropTypes.string,
+    createdAt: PropTypes.string.isRequired,
+    active: PropTypes.bool.isRequired,
+  }).isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onToggleStatus: PropTypes.func.isRequired,
+};
+
 
 export default CompanyJobs;
