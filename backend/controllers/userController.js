@@ -78,15 +78,20 @@ const logoutUser = (req, res) => {
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
 	const user = await User.findById(req.user._id).populate("badges").populate({path:"company", select: "name"});
-
+	
 	if (user) {
 		res.json({
 			_id: user._id,
 			name: user.name,
 			email: user.email,
+			phone: user.phone,
 			badges: user.badges,
 			resume: user.resume,
 			company: user.company,
+			registrationNo: user.registrationNo,
+			branch: user.branch,
+			currentYear: user.currentYear,
+			introduction: user.introduction
 		});
 	} else {
 		res.status(404);
@@ -106,6 +111,12 @@ const getUserProfileById = asyncHandler(async (req, res) => {
 			_id: user._id,
 			name: user.name,
 			email: user.email,
+			phone: user.phone,
+			resume: user.resume,
+			registrationNo: user.registrationNo,
+			branch: user.branch,
+			currentYear: user.currentYear,
+			introduction: user.introduction,
 			badges: user.badges,
 			company: user.company,
 		});
@@ -126,6 +137,10 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 		user.email = req.body.email || user.email;
 		user.phone = req.body.phone || user.phone;
 		user.resume = req.body.resume || user.resume;
+		user.registrationNo = req.body.registrationNo || user.registrationNo;
+		user.branch = req.body.branch || user.branch;
+		user.currentYear = req.body.currentYear || user.currentYear;
+		user.introduction = req.body.introduction || user.introduction;
 
 		if (req.body.password) {
 			user.password = req.body.password;
@@ -139,6 +154,10 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 			phone: updatedUser.phone,
 			email: updatedUser.email,
 			resume: updatedUser.resume,
+			registrationNo: updatedUser.registrationNo,
+			branch: updatedUser.branch,
+			currentYear: updatedUser.currentYear,
+			introduction: updatedUser.introduction,
 		});
 	} else {
 		res.status(404);

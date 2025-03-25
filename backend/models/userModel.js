@@ -26,6 +26,25 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			default: "",
 		},
+		registrationNo: {
+			type: String,
+			required: [true, "Registration number is required"],
+			trim: true,
+		  },
+		  branch: {
+			type: String,
+			required: [true, "Branch is required"],
+			trim: true,
+		  },
+		  currentYear: {
+			type: String,
+			required: [true, "Current year is required"],
+			enum: ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"],
+		  },		  
+		  introduction: {
+			type: String,
+			default: "",
+		  },
 		password: {
 			type: String,
 			required: true,
